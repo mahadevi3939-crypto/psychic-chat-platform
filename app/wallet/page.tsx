@@ -13,14 +13,15 @@ export default async function WalletPage() {
   }
 
   const { data: balanceRow, error: balanceError } = await supabase
-    .from("wallet_balances")
-    .select("balance")
-    .eq("user_id", user.id)
-    .single()
+  .from("wallet_balances")
+  .select("balance")
+  .eq("user_id", user.id)
+  .maybeSingle()
 
-  if (balanceError) {
-    throw new Error(balanceError.message)
-  }
+if (balanceError) {
+  throw new Error(balanceError.message)
+}
+
 
   const { data: transactions, error: txError } = await supabase
     .from("wallet_transactions")
