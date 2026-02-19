@@ -1,27 +1,28 @@
 import GlassCard from "@/app/components/GlassCard"
 import Button from "@/app/components/Button"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
+  import { getCurrentUser } from "@/lib/supabase/getCurrentUser"
+
 export const dynamic = "force-dynamic"
 
 export default async function WalletPage() {
-  const supabase = await createServerSupabaseClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
+const { user } = await getCurrentUser()
 
-  if (!user) {
-    throw new Error("Unauthorized")
-  }
-
-  const { data: balanceRow, error: balanceError } = await supabase
-  .from("wallet_balances")
-  .select("balance")
-  .eq("user_id", user.id)
-  .maybeSingle()
-
-if (balanceError) {
-  throw new Error(balanceError.message)
+if (!user) {
+  throw new Error("Unauthorized")
 }
 
+const supabase = await createServerSupabaseClient()
+
+
+  const { data: balanceRow } = await supabase
+    .from("wallet_balances")
+    .select("balance")
+    .eq("user_id", user.id)
+    .maybeSingle()
+
+  const balance = balanceRow?.balance ?? 0
 
   const { data: transactions, error: txError } = await supabase
     .from("wallet_transactions")
@@ -33,8 +34,6 @@ if (balanceError) {
   if (txError) {
     throw new Error(txError.message)
   }
-
-  const balance = balanceRow?.balance ?? 0
 
   return (
     <div className="container stack-lg">
