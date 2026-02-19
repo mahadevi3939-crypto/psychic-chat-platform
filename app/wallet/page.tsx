@@ -1,0 +1,91 @@
+import GlassCard from "@/app/components/GlassCard"
+import Button from "@/app/components/Button"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
+export const dynamic = "force-dynamic"
+
+export default async function WalletPage() {
+  const supabase = await createServerSupabaseClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error("Unauthorized")
+  }
+
+  const { data: balanceRow, error: balanceError } = await supabase
+    .from("wallet_balances")
+    .select("balance")
+    .eq("user_id", user.id)
+    .single()
+
+  if (balanceError) {
+    throw new Error(balanceError.message)
+  }
+
+  const { data: transactions, error: txError } = await supabase
+    .from("wallet_transactions")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(50)
+
+  if (txError) {
+    throw new Error(txError.message)
+  }
+
+  const balance = balanceRow?.balance ?? 0
+
+  return (
+    <div className="container stack-lg">
+      <h1 className="text-2xl font-semibold">Wallet</h1>
+
+      <GlassCard>
+        <div className="row-between">
+          <div className="text-sm">Current Balance</div>
+          <div className="text-lg font-semibold">
+            ₹{balance}
+          </div>
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <div className="stack-md">
+          <h2 className="text-lg font-semibold">
+            Transaction History
+          </h2>
+
+          {!transactions || transactions.length === 0 ? (
+            <div className="text-sm">
+              No transactions found.
+            </div>
+          ) : (
+            <ul className="stack-sm">
+              {transactions.map((tx) => (
+                <li key={tx.id}>
+                  <div className="row-between">
+                    <div className="text-sm">
+                      {tx.type}
+                    </div>
+                    <div className="text-sm font-medium">
+                      ₹{tx.amount}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <div className="stack-md">
+          <h2 className="text-lg font-semibold">
+            Recharge
+          </h2>
+
+          <Button>Recharge ₹100</Button>
+        </div>
+      </GlassCard>
+    </div>
+  )
+}

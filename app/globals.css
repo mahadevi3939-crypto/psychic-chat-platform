@@ -1,0 +1,15 @@
+@import "./styles/design-system.css";
+
+.ui-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(20px);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-soft);
+  transition: all 0.3s ease;
+}
+
+.ui-card:hover {
+  transform: translateY(-2px);
+}
