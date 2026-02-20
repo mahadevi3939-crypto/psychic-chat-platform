@@ -1,39 +1,33 @@
 import GlassCard from "@/app/components/GlassCard"
-import Button from "@/app/components/Button"
+import { getCurrentUser } from "@/lib/supabase/getCurrentUser"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
-  import { getCurrentUser } from "@/lib/supabase/getCurrentUser"
+import RechargeButton from "./RechargeButton"
 
 export const dynamic = "force-dynamic"
 
 export default async function WalletPage() {
+  const current = await getCurrentUser()
 
-const { user } = await getCurrentUser()
+  if (!current) {
+    throw new Error("Unauthorized")
+  }
 
-if (!user) {
-  throw new Error("Unauthorized")
-}
-
-const supabase = await createServerSupabaseClient()
-
+  const supabase = await createServerSupabaseClient()
 
   const { data: balanceRow } = await supabase
-    .from("wallet_balances")
-    .select("balance")
-    .eq("user_id", user.id)
+    .from("profiles")
+    .select("wallet_balance")
+    .eq("id", current.user.id)
     .maybeSingle()
 
-  const balance = balanceRow?.balance ?? 0
+  const balance = balanceRow?.wallet_balance ?? 0
 
-  const { data: transactions, error: txError } = await supabase
+  const { data: transactions } = await supabase
     .from("wallet_transactions")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("user_id", current.user.id)
     .order("created_at", { ascending: false })
     .limit(50)
-
-  if (txError) {
-    throw new Error(txError.message)
-  }
 
   return (
     <div className="container stack-lg">
@@ -50,22 +44,23 @@ const supabase = await createServerSupabaseClient()
 
       <GlassCard>
         <div className="stack-md">
-          <h2 className="text-lg font-semibold">
-            Transaction History
-          </h2>
+          <h2 className="text-lg font-semibold">Recharge</h2>
+          <RechargeButton />
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <div className="stack-md">
+          <h2 className="text-lg font-semibold">Transaction History</h2>
 
           {!transactions || transactions.length === 0 ? (
-            <div className="text-sm">
-              No transactions found.
-            </div>
+            <div className="text-sm">No transactions found.</div>
           ) : (
             <ul className="stack-sm">
               {transactions.map((tx) => (
                 <li key={tx.id}>
                   <div className="row-between">
-                    <div className="text-sm">
-                      {tx.type}
-                    </div>
+                    <div className="text-sm">{tx.type}</div>
                     <div className="text-sm font-medium">
                       ₹{tx.amount}
                     </div>
@@ -74,16 +69,6 @@ const supabase = await createServerSupabaseClient()
               ))}
             </ul>
           )}
-        </div>
-      </GlassCard>
-
-      <GlassCard>
-        <div className="stack-md">
-          <h2 className="text-lg font-semibold">
-            Recharge
-          </h2>
-
-          <Button>Recharge ₹100</Button>
         </div>
       </GlassCard>
     </div>
